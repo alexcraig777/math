@@ -1,0 +1,10 @@
+# Ignore all files, then unignore files with extension and dirs.
+*
+!*.*
+!*/
+
+# Ignore emacs temporary files.
+*~
+
+# Ignore object files.
+*.o
