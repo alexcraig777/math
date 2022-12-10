@@ -5,41 +5,56 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+
+enum sign_t {
+    POSITIVE,
+    NEGATIVE
+};
+
+struct Real;
+
 typedef uint64_t word;
 typedef uint32_t hword;
 
-#define MAX_WORD ((word) (long) -1)
-#define MAX_HWORD ((hword) (long) -1)
 
-enum sign_t {POSITIVE, NEGATIVE};
+#define MAX(x, y) (x >= y ? x : y)
+#define MIN(x, y) (x <= y ? x : y)
 
-struct Real {
-    enum sign_t sign;
 
-    ssize_t min_word_idx;
-    ssize_t max_word_idx;
+// Functions for allocating and freeing structures.
 
-    word* words;
-};
-
-struct Real* make_real(enum sign_t sign,
+struct Real* create_real(enum sign_t sign,
+                         ssize_t min_word_idx,
+                         ssize_t max_word_idx);
+struct Real* fill_real(enum sign_t sign,
                        ssize_t min_word_idx,
                        ssize_t max_word_idx,
                        ...);
+void allocate_words(struct Real* r);
 void free_real(struct Real* r);
 
+
+// Functions for getting and setting individual words.
+
+word get_word(struct Real* r, ssize_t word_idx);
+int set_word(struct Real* r, ssize_t word_idx, word l);
+
+hword get_half_word(struct Real* r, ssize_t hword_idx);
+int set_half_word(struct Real* r, ssize_t hword_idx, hword h);
+
+
+// Generic getters and setters.
+
+ssize_t get_max_word_idx(struct Real* r);
+ssize_t get_min_word_idx(struct Real* r);
+enum sign_t get_sign(struct Real* r);
+
+void set_max_word_idx(struct Real* r, ssize_t idx);
+void set_min_word_idx(struct Real* r, ssize_t idx);
+void set_sign(struct Real* r, enum sign_t sign);
+
+// Miscellaneous functions.
+
 void print_real(struct Real* real);
-
-struct Real* trim_leading_zeros(struct Real* r);
-
-struct Real* add(struct Real* r1, struct Real* r2);
-struct Real* subtract(struct Real* r1, struct Real* r2);
-struct Real* multiply(struct Real* r1, struct Real* r2);
-struct Real* divide(struct Real* r, word divisor,
-                    ssize_t num_extra_words);
-
-void negate(struct Real* r);
-
-char test_equal(struct Real* r1, struct Real* r2);
 
 #endif

@@ -1,4 +1,5 @@
 #include "real.h"
+#include "arithmetic.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,13 +12,13 @@ int add_test() {
     struct Real* c;
     struct Real* sum;
 
-    a = make_real(POSITIVE, -1, 1,
+    a = fill_real(POSITIVE, -1, 1,
                   (word) 0x1 << (sizeof(word)*8 - 1),
                   (word) 0x1 << (sizeof(word)*8 - 1));
-    b = make_real(POSITIVE, -1, 1,
+    b = fill_real(POSITIVE, -1, 1,
                   (word) 0x1 << (sizeof(word)*8 - 1),
                   (word) 0x1 << (sizeof(word)*8 - 1));
-    c = make_real(POSITIVE, -1, 2,
+    c = fill_real(POSITIVE, -1, 2,
                   0, 1, 1);
 
     sum = add(a, b);
@@ -45,11 +46,11 @@ int mul_test() {
     struct Real* c;
     struct Real* prod;
 
-    a = make_real(POSITIVE, 0, 1,
+    a = fill_real(POSITIVE, 0, 1,
                   0xdeadbeefd00dcafe);
-    b = make_real(POSITIVE, 0, 1,
+    b = fill_real(POSITIVE, 0, 1,
                   0xdeadbeefd00dcafe);
-    c = make_real(POSITIVE, 0, 2,
+    c = fill_real(POSITIVE, 0, 2,
                   0x7f7478defec1d404,
                   0xc1b1cd138b5ff82f);
 
@@ -77,9 +78,9 @@ int div_test() {
     struct Real* b;
     struct Real* quotient;
 
-    a = make_real(POSITIVE, 0, 1,
+    a = fill_real(POSITIVE, 0, 1,
                   0xdeadbeefd00dcafe);
-    b = make_real(POSITIVE, -1, 1,
+    b = fill_real(POSITIVE, -1, 1,
                   0xfe00000000000000,
                   0x00deadbeefd00dca);
 
