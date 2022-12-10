@@ -3,8 +3,9 @@
 !*.*
 !*/
 
-# Ignore emacs temporary files.
+# Ignore emacs and vim temporary files.
 *~
+*.swp
 
 # Ignore object files.
 *.o
