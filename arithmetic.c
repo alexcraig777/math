@@ -5,7 +5,7 @@
 #include "real.h"
 
 
-int add_word_at_idx(struct Real* r, ssize_t hword_idx, word w) {
+int add_word_at_hword_idx(struct Real* r, ssize_t hword_idx, word w) {
     // Add a word at the given half-word index `hword_idx`.
     // Half-word indices work exactly as full-word indices, but
     // reference half-words instead of full-words.
@@ -54,12 +54,13 @@ int add_word_at_idx(struct Real* r, ssize_t hword_idx, word w) {
     return rtn;
 }
 
-struct Real* multiply(struct Real* r1, struct Real* r2) {
+struct Real* mul_with_sig(struct Real* r1, struct Real* r2,
+                          ssize_t min_sig_word_idx) {
+    // Multiply 2 real numbers, ignore all words below `min_sig_word_idx`.
     struct Real* p;
     enum sign_t sign;
     ssize_t num_words;
-    ssize_t min_word_idx;
-    ssize_t max_word_idx;
+    ssize_t min_word_idx, max_word_idx;
 
     if (get_sign(r1) == get_sign(r2)) {
         sign = POSITIVE;
@@ -67,27 +68,34 @@ struct Real* multiply(struct Real* r1, struct Real* r2) {
         sign = NEGATIVE;
     }
 
-    num_words = (get_max_word_idx(r1)
-                 + get_max_word_idx(r2)
-                 - get_min_word_idx(r1)
-                 - get_min_word_idx(r2));
-
-    min_word_idx = get_min_word_idx(r1) + get_min_word_idx(r2);
-    max_word_idx = min_word_idx + num_words;
+    max_word_idx = get_max_word_idx(r1) + get_max_word_idx(r2);
+    min_word_idx = MAX(get_min_word_idx(r1) + get_min_word_idx(r2),
+                       min_sig_word_idx);
 
     p = create_real(sign, min_word_idx, max_word_idx);
 
     ssize_t idx_1, idx_2;
+    ssize_t idx_2_lower_bound;
     word h1, h2;
     for (idx_1 = 2*get_min_word_idx(r1);
          idx_1 < 2*get_max_word_idx(r1); idx_1++) {
         h1 = (word) get_half_word(r1, idx_1);
-        for (idx_2 = 2*get_min_word_idx(r2);
+
+        idx_2_lower_bound = MAX(2 * get_min_word_idx(r2),
+                                min_word_idx - idx_1);
+        for (idx_2 = idx_2_lower_bound;
              idx_2 < 2*get_max_word_idx(r2); idx_2++) {
             h2 = (word) get_half_word(r2, idx_2);
-            add_word_at_idx(p, idx_1 + idx_2, h1*h2);
+            add_word_at_hword_idx(p, idx_1 + idx_2, h1*h2);
         }
     }
+    return p;
+}
+
+struct Real* multiply(struct Real* r1, struct Real* r2) {
+    struct Real* p = mul_with_sig(r1, r2,
+                                  get_min_word_idx(r1)
+                                  + get_min_word_idx(r2));
     return p;
 }
 
@@ -230,12 +238,12 @@ struct Real* subtract(struct Real* r1, struct Real* r2) {
     return s;
 }
 
-struct Real* divide(struct Real* r, uint64_t divisor,
-                    ssize_t num_extra_words) {
+struct Real* div_with_sig(struct Real* r, word divisor,
+                          ssize_t min_sig_word_idx) {
     word quotient, remainder;
 
     struct Real* q = create_real(get_sign(r),
-                                 get_min_word_idx(r) - num_extra_words,
+                                 min_sig_word_idx,
                                  get_max_word_idx(r));
 
     ssize_t hword_idx;

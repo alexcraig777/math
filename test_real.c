@@ -86,7 +86,7 @@ int div_test() {
 
     word divisor = 256;
 
-    quotient = divide(a, divisor, 2);
+    quotient = div_with_sig(a, divisor, -2);
 
     if (VERBOSE) {
         print_real(a);
