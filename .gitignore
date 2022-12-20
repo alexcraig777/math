@@ -1,7 +1,9 @@
-# Ignore all files, then unignore files with extension and dirs.
+# Ignore all files, then unignore files with extension and dirs, and
+# Makefiles.
 *
 !*.*
 !*/
+!Makefile
 
 # Ignore emacs and vim temporary files.
 *~
