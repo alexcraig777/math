@@ -59,7 +59,6 @@ struct Real* mul_with_sig(struct Real* r1, struct Real* r2,
     // Multiply 2 real numbers, ignore all words below `min_sig_word_idx`.
     struct Real* p;
     enum sign_t sign;
-    ssize_t num_words;
     ssize_t min_word_idx, max_word_idx;
 
     if (get_sign(r1) == get_sign(r2)) {
@@ -72,7 +71,7 @@ struct Real* mul_with_sig(struct Real* r1, struct Real* r2,
     min_word_idx = MAX(get_min_word_idx(r1) + get_min_word_idx(r2),
                        min_sig_word_idx);
 
-    p = create_real(sign, min_word_idx, max_word_idx);
+    p = alloc_real(sign, min_word_idx, max_word_idx);
 
     ssize_t idx_1, idx_2;
     ssize_t idx_2_lower_bound;
@@ -82,7 +81,7 @@ struct Real* mul_with_sig(struct Real* r1, struct Real* r2,
         h1 = (word) get_half_word(r1, idx_1);
 
         idx_2_lower_bound = MAX(2 * get_min_word_idx(r2),
-                                min_word_idx - idx_1);
+                                2*min_word_idx - idx_1);
         for (idx_2 = idx_2_lower_bound;
              idx_2 < 2*get_max_word_idx(r2); idx_2++) {
             h2 = (word) get_half_word(r2, idx_2);
@@ -99,10 +98,18 @@ struct Real* multiply(struct Real* r1, struct Real* r2) {
     return p;
 }
 
-char greater_abs(struct Real* r1, struct Real* r2) {
+struct Real* mul_with_rel_sig(struct Real* r1, struct Real* r2,
+                              int num_sig_words) {
+    ssize_t min_word_idx = (get_max_word_idx(r1)
+                            + get_max_word_idx(r2)
+                            - num_sig_words);
+    return mul_with_sig(r1, r2, min_word_idx);
+}
+
+int greater_abs(struct Real* r1, struct Real* r2) {
     // Returns 1 if abs(r1) > abs(r2).
     // Otherwise returns 0.
-    char rtn = 0;
+    int rtn = 0;
     ssize_t word_idx;
 
     word w1, w2;
@@ -129,7 +136,6 @@ char greater_abs(struct Real* r1, struct Real* r2) {
 
 struct Real* add(struct Real* r1, struct Real* r2) {
     struct Real* s;
-    struct Real* tmp;
     if (get_sign(r1) == NEGATIVE) {
         negate(r1);
         s = subtract(r2, r1);
@@ -139,11 +145,12 @@ struct Real* add(struct Real* r1, struct Real* r2) {
         s = subtract(r1, r2);
         negate(r2);
     } else {
-        s = create_real(POSITIVE,
-                        MIN(get_min_word_idx(r1),
-                            get_min_word_idx(r2)),
-                        MAX(get_max_word_idx(r1),
-                            get_max_word_idx(r2)));
+        // Allocate space for a carried word.
+        s = alloc_real(POSITIVE,
+                       MIN(get_min_word_idx(r1),
+                           get_min_word_idx(r2)),
+                       MAX(get_max_word_idx(r1),
+                           get_max_word_idx(r2)) + 1);
 
         ssize_t word_idx;
         word w1, w2, sum_word;
@@ -165,20 +172,8 @@ struct Real* add(struct Real* r1, struct Real* r2) {
             }
         }
 
-        if (carry) {
-            // There was a carry beyond the most-significant
-            // allocated word.
-            tmp = create_real(get_sign(s),
-                              get_min_word_idx(s),
-                              get_max_word_idx(s) + 1);
-            for (word_idx = get_min_word_idx(s);
-                 word_idx < get_max_word_idx(s);
-                 word_idx++) {
-                set_word(tmp, word_idx, get_word(s, word_idx));
-            }
-            set_word(tmp, get_max_word_idx(s), (word) carry);
-            free_real(s);
-            s = tmp;
+        if (carry == 0) {
+            trim_most_significant_zeros(s);
         }
     }
     return s;
@@ -209,11 +204,11 @@ struct Real* subtract(struct Real* r1, struct Real* r2) {
     } else {
         // In this case, we know that `r1` has the greater absolute
         // value and is positive, and `r2` is negative.
-        s = create_real(POSITIVE,
-                        MIN(get_min_word_idx(r1),
-                            get_min_word_idx(r2)),
-                        MAX(get_max_word_idx(r1),
-                            get_max_word_idx(r2)));
+        s = alloc_real(POSITIVE,
+                       MIN(get_min_word_idx(r1),
+                           get_min_word_idx(r2)),
+                       MAX(get_max_word_idx(r1),
+                           get_max_word_idx(r2)));
 
         int borrow = 0;
         word w1, w2, diff_word;
@@ -242,9 +237,9 @@ struct Real* div_with_sig(struct Real* r, word divisor,
                           ssize_t min_sig_word_idx) {
     word quotient, remainder;
 
-    struct Real* q = create_real(get_sign(r),
-                                 min_sig_word_idx,
-                                 get_max_word_idx(r));
+    struct Real* q = alloc_real(get_sign(r),
+                                min_sig_word_idx,
+                                get_max_word_idx(r));
 
     ssize_t hword_idx;
     word h;
@@ -269,55 +264,17 @@ void negate(struct Real* r) {
     }
 }
 
-char test_equal(struct Real* r1, struct Real* r2) {
-    char rtn = 1;
-
-    struct Real* t = subtract(r1, r2);
-
+int is_zero(struct Real* r) {
+    // Returns 1 if `r` is zero; 0 otherwise.
+    int rtn = 1;
     ssize_t word_idx;
-    for (word_idx = get_min_word_idx(t);
-         word_idx < get_max_word_idx(t);
+    for (word_idx = get_min_word_idx(r);
+         word_idx < get_max_word_idx(r);
          word_idx++) {
-        if (get_word(t, word_idx) != 0) {
+        if (get_word(r, word_idx) != 0) {
             rtn = 0;
             break;
         }
     }
-    free_real(t);
     return rtn;
 }
-
-struct Real* trim_leading_zeros(struct Real* r) {
-    struct Real* rtn;
-    ssize_t new_max_word_idx = get_max_word_idx(r);
-    while (get_word(r, new_max_word_idx) == 0) {
-        new_max_word_idx--;
-        if (new_max_word_idx == get_min_word_idx(r) - 1) {
-            break;
-        }
-    }
-    if (new_max_word_idx == get_max_word_idx(r)) {
-        // No change.
-        rtn = r;
-    } else if (new_max_word_idx == get_min_word_idx(r) - 1) {
-        // The whole thing is 0.
-        rtn = fill_real(POSITIVE, 0, 1, 0);
-        free_real(r);
-    } else {
-        rtn = create_real(get_sign(r),
-                          new_max_word_idx + 1,
-                          get_min_word_idx(r));
-
-        ssize_t word_idx;
-        for (word_idx = get_min_word_idx(rtn);
-             word_idx < get_max_word_idx(rtn);
-             word_idx++) {
-            set_word(rtn, word_idx,
-                     get_word(r, word_idx));
-        }
-        free_real(r);
-    }
-    return rtn;
-}
-
-

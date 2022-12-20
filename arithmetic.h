@@ -12,10 +12,13 @@ struct Real* mul_with_sig(struct Real* r1, struct Real* r2,
 struct Real* div_with_sig(struct Real* r, word divisor,
                           ssize_t min_sig_word_idx);
 
+struct Real* mul_with_rel_sig(struct Real* r1, struct Real* r2,
+                              int num_sig_words);
+
 void negate(struct Real* r);
 
-char test_equal(struct Real* r1, struct Real* r2);
+int greater_abs(struct Real* r1, struct Real* r2);
 
-struct Real* trim_leading_zeros(struct Real* r);
+int is_zero(struct Real* r);
 
 #endif
