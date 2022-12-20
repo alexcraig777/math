@@ -2,6 +2,9 @@
 
 #include <stdio.h>
 
+extern test_func_t tests[];
+extern char* test_names[];
+
 void run_tests(test_func_t* tests, char** test_names) {
     int test_idx;
     int rtn;
@@ -27,3 +30,10 @@ void run_tests(test_func_t* tests, char** test_names) {
         printf("\nAt least one test failed :(\n");
     }
 }
+
+int main(void) {
+    run_tests(tests, test_names);
+
+    return 0;
+}
+

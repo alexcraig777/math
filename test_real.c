@@ -165,19 +165,15 @@ int test_trim() {
     return rtn;
 }
 
-int main(void) {
-    test_func_t tests[] = {
-        test_fill_get_set,
-        test_copy,
-        test_equal,
-        test_trim, NULL};
-    char* test_names[] = {
-        "fill_get_set",
-        "test_copy",
-        "test_equal",
-        "test_trim", NULL};
 
-    run_tests(tests, test_names);
+test_func_t tests[] = {
+    test_fill_get_set,
+    test_copy,
+    test_equal,
+    test_trim, NULL};
+char* test_names[] = {
+    "fill_get_set",
+    "copy",
+    "equal",
+    "trim", NULL};
 
-    return 0;
-}
