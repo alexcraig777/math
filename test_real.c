@@ -1,142 +1,183 @@
-#include "real.h"
-#include "arithmetic.h"
-
 #include <stdio.h>
-#include <stdlib.h>
 
-#define VERBOSE 0
+#include "real.h"
+#include "test.h"
 
-int add_test() {
-    struct Real* a;
-    struct Real* b;
-    struct Real* c;
-    struct Real* sum;
 
-    a = fill_real(POSITIVE, -1, 1,
-                  (word) 0x1 << (sizeof(word)*8 - 1),
-                  (word) 0x1 << (sizeof(word)*8 - 1));
-    b = fill_real(POSITIVE, -1, 1,
-                  (word) 0x1 << (sizeof(word)*8 - 1),
-                  (word) 0x1 << (sizeof(word)*8 - 1));
-    c = fill_real(POSITIVE, -1, 2,
-                  0, 1, 1);
-
-    sum = add(a, b);
-
-    if (VERBOSE) {
-        print_real(a);
-        print_real(b);
-        print_real(c);
-        print_real(sum);
-    }
-
-    int rtn = (test_equal(c, sum) == 1) ? 0 : -1;
-
-    free_real(a);
-    free_real(b);
-    free_real(c);
-    free_real(sum);
-
-    return rtn;
-}
-
-int mul_test() {
-    struct Real* a;
-    struct Real* b;
-    struct Real* c;
-    struct Real* prod;
-
-    a = fill_real(POSITIVE, 0, 1,
-                  0xdeadbeefd00dcafe);
-    b = fill_real(POSITIVE, 0, 1,
-                  0xdeadbeefd00dcafe);
-    c = fill_real(POSITIVE, 0, 2,
-                  0x7f7478defec1d404,
-                  0xc1b1cd138b5ff82f);
-
-    prod = multiply(a, b);
-
-    if (VERBOSE) {
-        print_real(a);
-        print_real(b);
-        print_real(c);
-        print_real(prod);
-    }
-
-    int rtn = (test_equal(c, prod) == 1) ? 0 : -1;
-
-    free_real(a);
-    free_real(b);
-    free_real(c);
-    free_real(prod);
-
-    return rtn;
-}
-
-int div_test() {
-    struct Real* a;
-    struct Real* b;
-    struct Real* quotient;
-
-    a = fill_real(POSITIVE, 0, 1,
-                  0xdeadbeefd00dcafe);
-    b = fill_real(POSITIVE, -1, 1,
-                  0xfe00000000000000,
-                  0x00deadbeefd00dca);
-
-    word divisor = 256;
-
-    quotient = div_with_sig(a, divisor, -2);
-
-    if (VERBOSE) {
-        print_real(a);
-        printf("0x%lx\n", divisor);
-        print_real(b);
-        print_real(quotient);
-    }
-
-    int rtn = (test_equal(b, quotient) == 1) ? 0 : -1;
-
-    free_real(a);
-    free_real(b);
-    free_real(quotient);
-
-    return rtn;
-}
-
-int main() {
+int test_fill_get_set() {
+    struct Real* r;
     int rtn = 0;
-    int temp;
 
-    temp = add_test();
-    rtn |= temp;
-    if (temp == 0) {
-        puts("Addition test passed!\n");
-    } else {
-        puts("Addition test failed :(\n");
+    r = alloc_real(POSITIVE, 1, 0);
+    if (r != NULL) {
+        FAIL("alloc_real: we should get a NULL real when min > max\n");
     }
 
-    temp = mul_test();
-    rtn |= temp;
-    if (temp == 0) {
-        puts("Multiplication test passed!\n");
-    } else {
-        puts("Multiplication test failed :(\n");
+    r = fill_real(POSITIVE, -2, 2, 3, 4, 5, 6);
+    if (get_word(r, -3) != 0) {
+        FAIL("alloc_word/get_word");
+    }
+    if (get_word(r, -2) != 3) {
+        FAIL("alloc_word/get_word");
+    }
+    if (get_word(r, -1) != 4) {
+        FAIL("alloc_word/get_word");
+    }
+    if (get_word(r, 0) != 5) {
+        FAIL("alloc_word/get_word");
+    }
+    if (get_word(r, 1) != 6) {
+        FAIL("alloc_word/get_word");
+    }
+    if (get_word(r, 2) != 0) {
+        FAIL("alloc_word/get_word");
     }
 
-    temp = div_test();
-    rtn |= temp;
-    if (temp == 0) {
-        puts("Divison test passed!\n");
-    } else {
-        puts("Division test failed :(\n");
+    if (set_word(r, -3, 42) != -1) {
+        FAIL("set_word with out of range index should be -1!");
+    }
+    if (set_word(r, 2, 42) != -1) {
+        FAIL("set_word with out of range index should be -1!");
+    }
+    if (set_word(r, 0, 42) != 0) {
+        FAIL("set_word with good index should return 0!");
+    }
+    if (get_word(r, 0) != 42) {
+        FAIL("get_word/set_word");
     }
 
-    if (rtn == 0) {
-        puts("\nAll tests passed!");
-    } else {
-        puts("\nAt least one test failed :(");
-    }
+    free_real(r);
 
     return rtn;
+}
+
+int test_copy() {
+    int rtn = 0;
+
+    struct Real* r = fill_real(POSITIVE, 2, 4, 24, 42);
+    struct Real* s = copy_real(r);
+
+    if (get_sign(r) != get_sign(s)) {
+        FAIL("copy_real/get_sign");
+    }
+    int i;
+    for (i = -1; i < 6; i++) {
+        if (get_word(r, i) != get_word(s, i)) {
+            FAIL("copy_real/get_word");
+        }
+    }
+
+    free_real(r);
+    free_real(s);
+
+    return rtn;
+}
+
+int test_equal() {
+    int rtn = 0;
+
+    struct Real* r = fill_real(POSITIVE, -2, 2, 2, 3, 4, 0);
+    struct Real* s = fill_real(POSITIVE, -3, 1, 0, 2, 3, 4);
+    struct Real* t = fill_real(POSITIVE, -3, 1, 0, 2, 5, 4);
+    struct Real* u = fill_real(POSITIVE, -1, 2, 0, 0, 0);
+    struct Real* v = fill_real(NEGATIVE, 0, 1, 0);
+
+    if (check_equal(r, s) != 1) {
+        FAIL("check_equal false negative on nonzero values");
+    }
+    if (check_equal(s, t) != 0) {
+        FAIL("check_equal: false positive with unequal words");
+    }
+    set_sign(s, NEGATIVE);
+    if (check_equal(r, s) != 0) {
+        FAIL("check_equal: false positive with different signs");
+    }
+
+    if (check_equal(u, v) != 1) {
+        FAIL("check_equal: false negative with signed 0");
+    }
+
+    free_real(r);
+    free_real(s);
+    free_real(t);
+    free_real(u);
+    free_real(v);
+
+    return rtn;
+}
+
+int test_trim() {
+    int rtn = 0;
+
+    struct Real* r = fill_real(POSITIVE, -2, 3, 0, 0, 1, 0, 0);
+    struct Real* s = copy_real(r);
+
+    trim_most_significant_zeros(r);
+    if (get_min_word_idx(r) != -2 || get_max_word_idx(r) != 1) {
+        FAIL("trim_most_significant_zeros: min/max word index");
+    }
+    if (check_equal(r, s) != 1) {
+        FAIL("trim_most_significant_zeros: equality");
+    }
+
+    trim_least_significant_zeros(r);
+    if (get_min_word_idx(r) != 0 || get_max_word_idx(r) != 1) {
+        FAIL("trim_least_significant_zeros: min/max word index");
+    }
+    if (check_equal(r, s) != 1) {
+        print_real(r);
+        print_real(s);
+        FAIL("trim_least_significant_zeros: equality");
+    }
+
+    trim_zeros(r);
+    if (get_min_word_idx(r) != 0 || get_max_word_idx(r) != 1) {
+        FAIL("trim_zeros: min/max word index on clean nonzero");
+    }
+    if (check_equal(r, s) != 1) {
+        print_real(r);
+        print_real(s);
+        FAIL("trim_zeros: equality on clean nonzero");
+    }
+
+    free_real(r);
+    free_real(s);
+
+    struct Real* z = fill_real(POSITIVE, 2, 4, 0, 0);
+    trim_most_significant_zeros(z);
+    if (get_min_word_idx(z) != 0 || get_max_word_idx(z) != 1) {
+        FAIL("trim_most_significant_zeros: min/max word index on 0");
+    }
+    if (get_word(z, 0) != 0) {
+        FAIL("trim_most_significant_zeros: equality on 0");
+    }
+    free_real(z);
+
+    z = fill_real(POSITIVE, 2, 4, 0, 0);
+    trim_least_significant_zeros(z);
+    if (get_min_word_idx(z) != 0 || get_max_word_idx(z) != 1) {
+        FAIL("trim_least_significant_zeros: min/max word index on 0");
+    }
+    if (get_word(z, 0) != 0) {
+        FAIL("trim_least_significant_zeros: equality on 0");
+    }
+    free_real(z);
+    return rtn;
+}
+
+int main(void) {
+    test_func_t tests[] = {
+        test_fill_get_set,
+        test_copy,
+        test_equal,
+        test_trim, NULL};
+    char* test_names[] = {
+        "fill_get_set",
+        "test_copy",
+        "test_equal",
+        "test_trim", NULL};
+
+    run_tests(tests, test_names);
+
+    return 0;
 }

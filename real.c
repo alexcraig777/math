@@ -24,12 +24,15 @@ struct Real {
 
 // Functions for allocating and freeing structures.
 
-struct Real* create_real(enum sign_t sign,
+struct Real* alloc_real(enum sign_t sign,
                          ssize_t min_word_idx,
                          ssize_t max_word_idx) {
-    // Allocates space for a new struct Real.
-    // Assigns the simple fields and allocates the correct amount
-    // of space for the words.
+    if (max_word_idx <= min_word_idx) {
+        printf("Trying to alloc real with min = %ld, max = %ld\n",
+               min_word_idx, max_word_idx);
+        printf("Returning NULL\n");
+        return NULL;
+    }
     struct Real* r = malloc(sizeof(struct Real));
     set_sign(r, sign);
     set_max_word_idx(r, max_word_idx);
@@ -42,33 +45,39 @@ struct Real* fill_real(enum sign_t sign,
                        ssize_t min_word_idx,
                        ssize_t max_word_idx,
                        ...) {
-    // Creates a new struct Real, assigns all fields, allocates
-    // space for the words, and fills them in with the words supplied
-    // by the variable arguments.
-    // The number of varargs must be `max_word_idx - min_word_idx + 1`.
-    struct Real* r = create_real(sign,
-                                 min_word_idx,
-                                 max_word_idx);
+    struct Real* r = alloc_real(sign,
+                                min_word_idx,
+                                max_word_idx);
 
     va_list ap;
     va_start(ap, max_word_idx);
 
     ssize_t word_idx;
-    word next_word;
     for (word_idx = min_word_idx;
          word_idx < max_word_idx;
          word_idx++) {
-        next_word = va_arg(ap, word);
-        set_word(r, word_idx, next_word);
+        set_word(r, word_idx, va_arg(ap, word));
     }
 
     return r;
 }
 
 void allocate_words(struct Real* r) {
-    // Allocates space for the appropriate number of words.
     r->words = calloc(get_max_word_idx(r) - get_min_word_idx(r),
                       sizeof(word));
+}
+
+struct Real* copy_real(struct Real* r) {
+    struct Real* rtn = alloc_real(get_sign(r),
+                                   get_min_word_idx(r),
+                                   get_max_word_idx(r));
+    ssize_t word_idx;
+    for (word_idx = get_min_word_idx(r);
+         word_idx < get_max_word_idx(r);
+         word_idx++) {
+        set_word(rtn, word_idx, get_word(r, word_idx));
+    }
+    return rtn;
 }
 
 void free_real(struct Real* r) {
@@ -97,16 +106,16 @@ word get_word(struct Real* r, ssize_t word_idx) {
 }
 
 int set_word(struct Real* r, ssize_t word_idx, word l) {
-    // Set the given word, following the indexing scheme
-    // described above.
+    // Set the value of the `word_idx` word in `r`.
+    // Returns 0 on success; -1 on error.
     int rtn;
     if (word_idx >= get_max_word_idx(r) ||
         word_idx < get_min_word_idx(r)) {
         puts("Tried to set word out of range!");
         rtn = -1;
     } else {
-        (r->words)[word_idx - get_min_word_idx(r)] = l;
         rtn = 0;
+        (r->words)[word_idx - get_min_word_idx(r)] = l;
     }
     return rtn;
 }
@@ -183,6 +192,114 @@ void set_sign(struct Real* r, enum sign_t sign) {
 
 
 // Miscellaneous functions.
+
+int check_equal(struct Real* r1, struct Real* r2) {
+    int rtn = 1;
+    // After comparing all words, this flag will tell us whether both reals
+    // are 0. If they are, then we shouldn't check the sign!
+    int both_zero = 1;
+
+    ssize_t word_idx;
+    for (word_idx = MIN(get_min_word_idx(r1), get_min_word_idx(r2));
+         word_idx < MAX(get_max_word_idx(r1), get_max_word_idx(r2));
+         word_idx++) {
+        if (get_word(r1, word_idx) != get_word(r2, word_idx)) {
+            rtn = 0;
+            break;
+        }
+        if (get_word(r1, word_idx) != 0) {
+            both_zero = 0;
+        }
+    }
+
+    if (rtn == 1 && both_zero == 0) {
+        if (get_sign(r1) != get_sign(r2)) {
+            rtn = 0;
+        }
+    }
+    return rtn;
+}
+
+void trim_most_significant_zeros(struct Real* r) {
+    // This function has to reference actual fields inside the struct Real
+    // in order to reallocate the words buffer.
+    ssize_t new_max_word_idx;
+    ssize_t old_max_word_idx = get_max_word_idx(r);
+
+    for (new_max_word_idx = old_max_word_idx;
+         new_max_word_idx > get_min_word_idx(r);
+         new_max_word_idx--) {
+        if (get_word(r, new_max_word_idx - 1) != 0) {
+            break;
+        }
+    }
+
+    if (new_max_word_idx == get_min_word_idx(r)) {
+        // `r` = 0. But it might already be as clean as possible.
+        if (get_min_word_idx(r) != 0 || old_max_word_idx != 1) {
+            free(r->words);
+            set_min_word_idx(r, 0);
+            set_max_word_idx(r, 1);
+            allocate_words(r);
+        }
+    }
+    else if (new_max_word_idx < old_max_word_idx) {
+        // We can decrease the allocated space.
+        word* old_words = r->words;
+        set_max_word_idx(r, new_max_word_idx);
+        allocate_words(r);
+        ssize_t word_idx;
+        for (word_idx = get_min_word_idx(r);
+             word_idx < get_max_word_idx(r);
+             word_idx++) {
+            set_word(r, word_idx, old_words[word_idx - get_min_word_idx(r)]);
+        }
+        free(old_words);
+    }
+}
+
+void trim_least_significant_zeros(struct Real* r) {
+    // This function has to reference actual fields inside the struct Real
+    // in order to reallocate the words buffer.
+    ssize_t new_min_word_idx;
+    ssize_t old_min_word_idx = get_min_word_idx(r);
+
+    for (new_min_word_idx = old_min_word_idx;
+         new_min_word_idx < get_max_word_idx(r);
+         new_min_word_idx++) {
+        if (get_word(r, new_min_word_idx) != 0) {
+            break;
+        }
+    }
+
+    if (new_min_word_idx == get_max_word_idx(r)) {
+        // `r` = 0. But it might already be as clean as possible.
+        if (old_min_word_idx != 0 || get_max_word_idx(r) != 1) {
+            free(r->words);
+            set_min_word_idx(r, 0);
+            set_max_word_idx(r, 1);
+            allocate_words(r);
+        }
+    }
+    else if (new_min_word_idx > old_min_word_idx) {
+        // We can decrease the allocated space.
+        word* old_words = r->words;
+        set_min_word_idx(r, new_min_word_idx);
+        allocate_words(r);
+        ssize_t word_idx;
+        for (word_idx = get_min_word_idx(r);
+             word_idx < get_max_word_idx(r);
+             word_idx++) {
+            set_word(r, word_idx, old_words[word_idx - old_min_word_idx]);
+        }
+        free(old_words);
+    }
+}
+
+void trim_zeros(struct Real* r) {
+    trim_most_significant_zeros(r);
+    trim_least_significant_zeros(r);
+}
 
 void print_real(struct Real* r) {
     ssize_t word_idx;
