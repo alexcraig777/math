@@ -237,21 +237,29 @@ struct Real* div_with_sig(struct Real* r, word divisor,
                           ssize_t min_sig_word_idx) {
     word quotient, remainder;
 
-    struct Real* q = alloc_real(get_sign(r),
-                                min_sig_word_idx,
-                                get_max_word_idx(r));
+    struct Real* q;
+    if (get_max_word_idx(r) <= min_sig_word_idx) {
+        // If `min_sig_word_idx` is greater than the greatest word idx in `r`,
+        // then the result is just 0.
+        q = fill_real(POSITIVE, 0, 1, 0);
+    } else {
+        // Otherwise we have to do the actual computation.
+        q = alloc_real(get_sign(r),
+                       min_sig_word_idx,
+                       get_max_word_idx(r));
 
-    ssize_t hword_idx;
-    word h;
-    remainder = 0;
-    for (hword_idx = 2*get_max_word_idx(q) - 1;
-         hword_idx >= 2*get_min_word_idx(q);
-         hword_idx--) {
-        h = (word) get_half_word(r, hword_idx);
-        h += remainder << (sizeof(hword)*8);
-        quotient = h / divisor;
-        set_half_word(q, hword_idx, (hword) quotient);
-        remainder = h % divisor;
+        ssize_t hword_idx;
+        word h;
+        remainder = 0;
+        for (hword_idx = 2*get_max_word_idx(q) - 1;
+             hword_idx >= 2*get_min_word_idx(q);
+             hword_idx--) {
+            h = (word) get_half_word(r, hword_idx);
+            h += remainder << (sizeof(hword)*8);
+            quotient = h / divisor;
+            set_half_word(q, hword_idx, (hword) quotient);
+            remainder = h % divisor;
+        }
     }
     return q;
 }
