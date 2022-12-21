@@ -48,6 +48,26 @@ int test_fill_get_set() {
 
     free_real(r);
 
+    r = fill_real(POSITIVE, -2, 2,
+                  17162673854044802117ul, 14069626884177783709ul,
+                  0, 0);
+
+    if (get_word(r, -2) != 17162673854044802117ul) {
+        FAIL("fill_real/get_word, index -2");
+    }
+    if (get_word(r, -1) != 14069626884177783709ul) {
+        FAIL("fill_real/get_word, index -1");
+    }
+    if (get_word(r, 0) != 0) {
+        FAIL("fill_real/get_word, index 0");
+    }
+    if (get_word(r, 1) != 0) {
+        FAIL("fill_real/get_word, index 1");
+    }
+    free_real(r);
+
+    printf("\n");
+
     return rtn;
 }
 
