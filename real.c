@@ -58,6 +58,7 @@ struct Real* fill_real(enum sign_t sign,
          word_idx++) {
         set_word(r, word_idx, va_arg(ap, word));
     }
+    va_end(ap);
 
     return r;
 }
