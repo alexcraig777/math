@@ -61,6 +61,7 @@ char* get_positive_integer_decimal_digits(struct Real* r_int) {
     struct String* rev_s = create_string("");
 
     r_int = copy_real(r_int);
+    set_sign(r_int, POSITIVE);
     struct Real* next_int;
     struct Real* ten = fill_real(POSITIVE, 0, 1, 10);
     struct Real* to_subtract;
@@ -137,7 +138,6 @@ char* real_to_decimal_str(struct Real* r) {
 
     // Get the integer digits.
     struct Real* integer = div_with_sig(r, 1, 0);
-    set_sign(integer, POSITIVE);
     char* int_digits = get_positive_integer_decimal_digits(integer);
     sprintf_append(s, "%s", int_digits);
 

@@ -22,9 +22,35 @@ int test_real_to_decimal() {
         printf("correct: %s\n", correct);
         printf("ours:    %s\n", dec_str);
     }
-
     free(dec_str);
     free_real(r);
+
+    // Pure fraction.
+    r = fill_real(POSITIVE, -1, 0, 1ul<<63);
+    dec_str = real_to_decimal_str(r);
+    correct = "0.5";
+
+    if (strcmp(dec_str, correct) != 0) {
+        FAIL("real_to_decimal");
+        printf("correct: %s\n", correct);
+        printf("ours:    %s\n", dec_str);
+    }
+    free(dec_str);
+    free_real(r);
+
+    // Whole, negative number.
+    r = fill_real(NEGATIVE, 0, 1, 342);
+    dec_str = real_to_decimal_str(r);
+    correct = "-342";
+
+    if (strcmp(dec_str, correct) != 0) {
+        FAIL("real_to_decimal");
+        printf("correct: %s\n", correct);
+        printf("ours:    %s\n", dec_str);
+    }
+    free(dec_str);
+    free_real(r);
+
 
     return rtn;
 }
