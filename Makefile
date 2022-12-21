@@ -5,7 +5,7 @@ CFLAGS = -g -Wall -Wextra
 # All files at higher levels depend on all files at lower layers.
 layer_1 = real.o
 layer_2 = $(layer_1) arithmetic.o
-layer_3 = $(layer_2) trig.o decimal.o
+layer_3 = $(layer_2) decimal.o
 
 test_objects = $(foreach obj,$(layer_3),test_$(obj))
 
