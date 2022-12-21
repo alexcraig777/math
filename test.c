@@ -16,19 +16,18 @@ void run_tests(test_func_t* tests, char** test_names) {
             successes += 1;
         }
 
-        printf("\n--------------------------------------------------\n");
-        printf("(%d) %s %s\n", test_idx + 1, test_names[test_idx],
+        printf("--> (%d) %s %s\n", test_idx + 1, test_names[test_idx],
                rtn == 0 ? "passed!" : "failed :(");
-        printf("--------------------------------------------------\n");
     }
 
-    printf("\n%d/%d tests passed!\n", successes, test_idx);
-
+    printf("\n-----------------------------------------\n");
+    printf("--> %d/%d tests passed!\n", successes, test_idx);
     if (successes == test_idx) {
-        printf("\nAll tests passed!\n");
+        printf("--> All tests passed!\n");
     } else {
-        printf("\nAt least one test failed :(\n");
+        printf("--> At least one test failed :(\n");
     }
+    printf("-----------------------------------------\n");
 }
 
 int main(void) {
