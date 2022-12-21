@@ -56,7 +56,7 @@ int add_word_at_hword_idx(struct Real* r, ssize_t hword_idx, word w) {
 
 struct Real* mul_with_sig(struct Real* r1, struct Real* r2,
                           ssize_t min_sig_word_idx) {
-    // Multiply 2 real numbers, ignore all words below `min_sig_word_idx`.
+    // Multiply 2 real numbers, ignoring all words below `min_sig_word_idx`.
     struct Real* p;
     enum sign_t sign;
     ssize_t min_word_idx, max_word_idx;
@@ -254,6 +254,11 @@ struct Real* div_with_sig(struct Real* r, word divisor,
         remainder = h % divisor;
     }
     return q;
+}
+
+struct Real* div_with_rel_sig(struct Real* r, word divisor,
+                              int num_sig_words) {
+    return div_with_sig(r, divisor, get_max_word_idx(r) - num_sig_words);
 }
 
 void negate(struct Real* r) {

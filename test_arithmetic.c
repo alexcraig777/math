@@ -97,6 +97,8 @@ int test_mul() {
 }
 
 int test_div() {
+    int rtn = 0;
+
     struct Real* a;
     struct Real* b;
     struct Real* quotient;
@@ -106,16 +108,23 @@ int test_div() {
     b = fill_real(POSITIVE, -1, 1,
                   0xfe00000000000000,
                   0x00deadbeefd00dca);
-
     word divisor = 256;
 
     quotient = div_with_sig(a, divisor, -2);
 
-    int rtn = (check_equal(b, quotient) == 1) ? 0 : -1;
+    if (check_equal(b, quotient) != 1) {
+        FAIL("div_with_sig");
+    }
+    free_real(quotient);
+
+    quotient = div_with_rel_sig(a, divisor, 2);
+    if (check_equal(b, quotient) != 1) {
+        FAIL("div_with_rel_sig");
+    }
+    free_real(quotient);
 
     free_real(a);
     free_real(b);
-    free_real(quotient);
 
     return rtn;
 }
