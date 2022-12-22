@@ -100,6 +100,8 @@ struct Real* multiply(struct Real* r1, struct Real* r2) {
 
 struct Real* mul_with_rel_sig(struct Real* r1, struct Real* r2,
                               int num_sig_words) {
+    trim_most_significant_zeros(r1);
+    trim_most_significant_zeros(r2);
     ssize_t min_word_idx = (get_max_word_idx(r1)
                             + get_max_word_idx(r2)
                             - num_sig_words);
@@ -266,6 +268,7 @@ struct Real* div_with_sig(struct Real* r, word divisor,
 
 struct Real* div_with_rel_sig(struct Real* r, word divisor,
                               int num_sig_words) {
+    trim_most_significant_zeros(r);
     return div_with_sig(r, divisor, get_max_word_idx(r) - num_sig_words);
 }
 
