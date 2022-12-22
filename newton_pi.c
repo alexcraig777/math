@@ -10,6 +10,12 @@ struct Real* get_threshold(struct Real* cos_est) {
     struct Real* est_cubed = mul_with_rel_sig(cos_est, est_squared, 3);
     struct Real* result = div_with_rel_sig(est_cubed, 12, 3);
 
+    /*
+    printf("  * est_squared = ");
+    print_decimal(est_squared);
+    printf("  * est_cubed   = ");
+    print_decimal(est_cubed);*/
+
     free_real(est_squared);
     free_real(est_cubed);
     return result;
@@ -26,6 +32,8 @@ struct Real* get_next_term(struct Real* current_term,
 
     struct Real* rtn = div_with_sig(temp2, 2*term_idx, min_sig_word_idx);
     free_real(temp2);
+
+    negate(rtn);
 
     return rtn;
 }
@@ -52,37 +60,60 @@ struct Real* my_cos(struct Real* theta, ssize_t min_sig_word_idx) {
 
     struct Real* temp;
     struct Real* threshold;
+    int below_threshold;
+
+    printf("computing cosine with min_sig_word_idx = %ld\n", min_sig_word_idx);
+    /*
+    printf("Computing cosine for theta = ");
+    print_decimal(theta);
+    printf("min_sig_word_idx = %ld\n", min_sig_word_idx);
+    */
 
     word term_idx = 1;
     while (1) {
+        /*
+        printf("\nBeginning Taylor series term %ld\n", term_idx);
+        printf("- current estimate = ");
+        print_decimal(cos_est);
+        */
+
         // Compute the next Taylor term.
         temp = get_next_term(next_term, theta_squared, term_idx,
                              min_sig_word_idx);
         free_real(next_term);
         next_term = temp;
 
+        /*
+        printf("- Taylor term = ");
+        print_decimal(next_term);
+        */
+
         // Compute a threshold estimate.
         threshold = get_threshold(cos_est);
 
-        // If the next term is below the threshold, stop.
-        if (greater_abs(threshold, next_term) == 1) {
-            break;
-        }
-        free_real(threshold);
+        /*
+        printf("- current threshold estimate = ");
+        print_decimal(threshold);
+        */
 
-        // Add or subtract the term, as appropriate.
-        if (term_idx & 1) {
-            temp = subtract(cos_est, next_term);
-        } else {
-            temp = add(cos_est, next_term);
-        }
+        // We keep track of the sign in `next_term`, so we can just add.
+        temp = add(cos_est, next_term);
         free_real(cos_est);
         cos_est = temp;
+
+        // If the next term is below the threshold, stop.
+        below_threshold = greater_abs(threshold, next_term);
+        free_real(threshold);
+        if (below_threshold) {
+            break;
+        }
 
         term_idx++;
     }
     free_real(theta_squared);
     free_real(next_term);
+
+    printf("computed cosine using %ld terms\n", term_idx);
 
     return cos_est;
 }
@@ -91,7 +122,7 @@ void pi_step(struct Real** x, struct Real** d) {
     struct Real* new_x;
 
     trim_most_significant_zeros(*d);
-    ssize_t min_sig_word_idx = get_max_word_idx(*d) * 9 - 1;
+    ssize_t min_sig_word_idx = get_max_word_idx(*d) * 9 - 5;
 
     free_real(*d);
 
@@ -117,17 +148,20 @@ int main() {
                                0x1999999999999999ul);
 
     int newton_steps = 0;
-    while (1) {
+    while (newton_steps < 10) {
         printf("\n============= %d Newton steps ==================\n",
                newton_steps);
 
         pi = multiply(x, two);
 
-        printf("pi ~\n");
+        printf("x_%d = ", newton_steps);
+        print_decimal(x);
+
+        printf("p_%d = ", newton_steps);
         print_decimal(pi);
         free_real(pi);
 
-        printf("error ~\n");
+        printf("eps_%d ~ ", newton_steps - 1);
         print_decimal(d);
 
         printf("==================================================\n\n");
@@ -136,6 +170,8 @@ int main() {
 
         newton_steps++;
     }
+
+    free_real(two);
 
     free_real(x);
     free_real(d);
