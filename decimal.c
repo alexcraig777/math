@@ -55,6 +55,7 @@ void sprintf_append(struct String* s, char* fmt, ...) {
 void print_decimal(struct Real* r) {
     char* decimal_str = real_to_decimal_str(r);
     printf("%s\n", decimal_str);
+    free(decimal_str);
 }
 
 char* get_positive_integer_decimal_digits(struct Real* r_int) {
@@ -140,6 +141,7 @@ char* real_to_decimal_str(struct Real* r) {
     struct Real* integer = div_with_sig(r, 1, 0);
     char* int_digits = get_positive_integer_decimal_digits(integer);
     sprintf_append(s, "%s", int_digits);
+    free(int_digits);
 
     // Get the fractional digits.
     struct Real* fraction = subtract(r, integer);
@@ -148,8 +150,6 @@ char* real_to_decimal_str(struct Real* r) {
     if (strlen(frac_digits) > 0) {
         sprintf_append(s, ".%s", frac_digits);
     }
-
-    free(int_digits);
     free(frac_digits);
 
     free_real(integer);
