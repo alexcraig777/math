@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 
 #include "arithmetic.h"
 #include "decimal.h"
@@ -114,6 +115,9 @@ struct Real* my_cos(struct Real* theta, ssize_t min_sig_word_idx) {
     free_real(next_term);
 
     printf("computed cosine using %ld terms\n", term_idx);
+
+    time_t t = time(NULL);
+    printf("time = %ld\n", t);
 
     return cos_est;
 }
